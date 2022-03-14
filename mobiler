@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+tput reset
+trap "" SIGINT
+
+NAME="Mobiler"
+c="©"
+r="®"
+ROOT="$HOME/.mobiler"
+wc="🔴🟢🟡"
+VERSION="c0.6.1"
+cfe(){
+	if [[ -f "$1" ]]; then return 0; else return 1; fi
+}
+cde(){
+	if [[ -d "$1" ]]; then return 0; else return 1; fi
+}
+ivi(){
+	if [[ $1 == "" ]]; then $2; else $3; fi
+}
+ivci(){
+	if [[ $1 == "$2" ]]; then $3; else $4; fi
+}
+hread(){
+	read -s $@
+}
+window(){
+	clear
+	if [[ $1 == "-nl" ]]; then text="$2"; lines="0"; else text="$1"; fi
+	echo "$text"
+    if [[ $lines == "0" ]]; then
+		echo "---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+	fi
+}
+setup(){
+	window "Mobiler$r $VERSION Set-UP"
+	echo "You are about to setup Mobiler."
+	echo "Mobiler is a simple, easy, clean system that's nice for working & running servers."
+	echo "It's created by Olafcio$c."
+	echo
+	read -n 3 -p "Start setup [type 'yes' if yes]? "
+	if [[ $REPLY != "yes" ]]
+	then
+		echo "Aborting."
+		exit 400
+	fi
+	echo
+	echo "Set-UP started."
+	# Creating directories
+	if [[ $1 != "-u" ]]; then
+		mkdir $ROOT
+		mkdir $ROOT/commands
+		mkdir $ROOT/modules
+		mkdir $ROOT/servers
+		mkdir $ROOT/config
+		mkdir $ROOT/users
+		mkdir $ROOT/root
+	fi
+	# Creating additional files in ROOT directory
+	if [[ $1 != "-u" ]]; then
+		touch $ROOT/.start-up
+	fi
+	echo '
+ROOT="$HOME/.mobiler"
+echo "Mobiler$r `cat $ROOT/.version`"
+echo "Olafcio©. All rights reserved."
+echo
+echo "Log-on to Mobiler"
+echo -n "Username: "
+read LU
+echo -n "Password: "
+read -s LP
+if [[ $LU != "." && $LU != "" && -d "$ROOT/users/$LU" ]]; then
+	if [[ `cat $ROOT/config/psswd/$LU` == "$LP" ]]; then
+		echo "$LU">$ROOT/.currentuser
+		echo "Logged on successfully!"
+		cd $ROOT/users/$LU
+		if [[ -f "$ROOT/users/$LU/.bash-logon" ]]; then
+			$ROOT/users/$LU/.bash-logon
+		fi
+		$ROOT/commands/sh
+	else
+		echo "Wrong password!"
+	fi
+else
+	echo "Unkown user!"
+fi
+	'>$ROOT/.start-up
+	if [[ $1 != "-u" ]]; then
+		touch $ROOT/.version
+	fi
+	echo "$VERSION">$ROOT/.version
+	chmod 700 $ROOT/.start-up
+	chmod 700 $ROOT/.version
+	# Adding commands to /commands
+	echo '
+	echo "Commands:"
+	ls $HOME/.mobiler/commands
+	'>$ROOT/commands/help
+	echo '
+ROOT="$HOME/.mobiler"
+. $ROOT/modules/colors
+if [[ $1 == "" ]]; then
+	SPATH="."
+else
+	if [[ -d "$1" ]]; then
+		SPATH="$1"
+	else
+		error "Specified directory was not found (maybe it is a file?)."
+		exit
+	fi
+fi
+echo "Files & directories in $SPATH:"
+ls -la $SPATH
+	'>$ROOT/commands/dir
+	echo '
+ROOT="$HOME/.mobiler"
+USER="`cat $ROOT/.currentuser`"
+. $ROOT/modules/colors
+while [ 1 ]; do
+	echo -n "${USER}> "
+	read cmd
+	if [[ $cmd == "exit" ]]; then
+		clear
+		exit 0
+	else
+		$ROOT/commands/$cmd
+	fi
+done
+	'>$ROOT/commands/sh
+	echo '
+ROOT="$HOME/.mobiler"
+. $ROOT/modules/colors
+if [[ $1 == "" ]]; then
+	error "First parameter is empty, please fill it!"
+	info "Usage: usermake [user name] [user password]"
+else
+	mkdir $ROOT/users/$1
+	touch $ROOT/config/psswd/$1
+	if [[ $2 == "" ]]; then
+		warn "User that you are creating right now will have no password. If you want to add it, use \"psswd\"."
+	else
+		echo "$2">$ROOT/config/psswd/$1
+	fi
+	info "Account created successfully."
+fi
+	'>$ROOT/commands/usermake
+	echo '
+ROOT="$HOME/.mobiler"
+user="`cat $ROOT/.currentuser`"
+. $ROOT/modules/colors
+if [[ $1 == "" ]]; then
+	error "First parameter is empty, please fill it!"
+	info "Usage: psswd [new password] [user name - leave empty if for your]"
+else
+	if [[ $2 != "" ]]; then user="$2"; fi
+	echo "$1">$ROOT/config/psswd/$user
+	info "Password changed successfully for $user."
+fi
+	'>$ROOT/commands/psswd
+	echo '
+ROOT="$HOME/.mobiler"
+user="`cat $ROOT/.currentuser`"
+. $ROOT/modules/colors
+if [[ $1 == "" || $2 == "" ]]; then
+	error "First or second parameter is empty, please fill it!"
+	info "Usage: username [user name you want to change name] [new name of user you want to change name]"
+else
+	mv $ROOT/users/$1 $ROOT/users/$2
+	mv $ROOT/config/psswd/$1 $ROOT/config/psswd/$2
+	info "Specified user changed the name to new specified name."
+fi
+	'>$ROOT/commands/username
+	echo '
+ROOT="$HOME/.mobiler"
+user="`cat $ROOT/.currentuser`"
+. $ROOT/modules/colors
+echo "Mobiler®"
+echo "Created by Olafcio$c using "BaSH" Terminal shell."
+echo ""
+echo "This system is being used right now by $user."
+	'>$ROOT/commands/about
+	chmod 700 $ROOT/commands/*
+	# Adding modules to /modules
+	echo '
+error(){
+	tput bold
+	tput setaf 1
+	echo "[!] $@"
+	tput sgr0
+}
+info(){
+	tput bold
+	tput setaf 2
+	echo "[i] $@"
+	tput sgr0
+}
+warn(){
+	tput bold
+	tput setaf 3
+	echo "[?] $@"
+	tput sgr0
+}
+debug(){
+	tput bold
+	tput setaf 8
+	echo "[d] $@"
+	tput sgr0
+}
+	'>$ROOT/modules/colors
+	. $ROOT/modules/colors
+	# Adding servers to /servers
+	if [[ $1 != "-u" ]]; then
+		# Adding config files to /config
+		mkdir $ROOT/config/psswd
+		# Adding first user in /users
+		$ROOT/commands/usermake me
+	fi
+	if [[ $1 == "-u" ]]; then
+		info "Update is done successfully. Start Mobiler again to see effects."
+	else
+		info "Setup is done successfully. Start Mobiler again to see effects."
+	fi
+	exit 0
+}
+if [[ ! -d "$ROOT" ]]; then
+	setup
+fi
+if [[ `cat $ROOT/.version` != "$VERSION" ]]; then
+	. $ROOT/modules/colors
+	warn "An update is avaiable: version $VERSION"
+	warn "Type 'now' if you want to download it."
+	read -n 3 -t 2
+	if [[ "$REPLY" == "now" ]]; then
+		echo "Updating your Mobiler..."
+		setup -u
+	fi
+fi
+$ROOT/.start-up
